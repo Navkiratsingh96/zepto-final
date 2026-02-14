@@ -1,8 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Zepto Spending Master",
-  "version": "8.0",
-  "description": "Final fixed version.",
+  "name": "Zepto Spending & Stats",
+  "version": "12.0",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["*://*.zepto.com/*", "*://*.zeptonow.com/*"],
   "action": {
