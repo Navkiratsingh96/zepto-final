@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Zepto Master</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <h2>🟣 Zepto Master</h2>
+    <span id="badge" class="badge">Ready</span>
+  </div>
+
+  <div class="main-stats">
+    <div class="card total-card">
+      <div class="label">LIFETIME SPEND</div>
+      <div class="big-number" id="totalAmount">₹0</div>
+      <div class="sub-text" id="orderCount">0 Orders Tracked</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="scanBtn" class="primary-btn">🔄 Scan Visible Orders</button>
+    <button id="clearBtn" class="text-btn">Reset Data</button>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    
+    <div class="section">
+      <h3>📅 Monthly Spending</h3>
+      <div id="chartContainer" class="chart-box"></div>
+    </div>
+
+    <div class="section">
+      <h3>🏆 Top Products</h3>
+      <div id="topProductsList" class="product-list"></div>
+    </div>
+
+  </div>
+
+  <div id="statusMsg">
+    <p>1. Open <b>Zepto > Orders</b></p>
+    <p>2. Scroll down to load history</p>
+    <p>3. Click <b>Scan</b></p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
