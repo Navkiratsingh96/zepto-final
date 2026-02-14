@@ -3,116 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body { width: 350px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 15px; background: #f8f9fa; color: #333; }
-    
-    .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; margin-bottom: 12px; }
-    h2 { margin: 0 0 5px 0; color: #3d0752; font-size: 18px; font-weight: 800; }
-    .big-num { font-size: 36px; font-weight: 800; color: #ff3269; margin: 8px 0; }
-    
-    button { width: 100%; padding: 12px; background: #3d0752; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 5px; font-size: 14px; }
+    /* CSS STYLES */
+    body { width: 320px; font-family: sans-serif; padding: 15px; background: #f4f4f4; color: #333; }
+    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 10px; }
+    h2 { margin: 0 0 5px 0; color: #3d0752; font-size: 18px; }
+    .big-num { font-size: 32px; font-weight: bold; color: #ff3269; margin: 10px 0; }
+    button { width: 100%; padding: 12px; background: #3d0752; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
     button:hover { background: #5a1075; }
-    button:disabled { background: #cbd5e0; cursor: not-allowed; }
-    
-    .log-box { background: #222; color: #0f0; font-family: monospace; font-size: 10px; padding: 10px; border-radius: 6px; height: 80px; overflow-y: auto; margin-top: 10px; text-align: left; display: none; }
-
-    .section-title { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 2px solid #ff3269; display: inline-block; }
-
-    .prod-row { display: flex; align-items: center; background: white; padding: 8px; margin-bottom: 6px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; }
-    .badge { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 8px; font-size: 11px; }
-
-    #results { display: none; }
+    button:disabled { background: #ccc; }
+    .list { text-align: left; margin-top: 15px; }
+    .item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+    .prod-row { display: flex; align-items: center; background: white; padding: 8px; margin-bottom: 6px; border-radius: 4px; }
+    .count-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; margin-right: 8px; }
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h2>🟣 Zepto Tracker v10</h2>
+    <h2>🟣 Zepto Analyzer</h2>
     <div class="big-num" id="totalAmount">₹0</div>
-    <div id="orderCount" style="color:#666; font-size:12px">0 Orders</div>
+    <div id="orderCount" style="color:#666; font-size:12px">0 Orders found</div>
   </div>
 
   <button id="scanBtn">🔄 Scan Visible Orders</button>
-  <button id="clearBtn" style="background:#e2e8f0; color:#333; margin-top:8px">Reset Data</button>
+  <button id="clearBtn" style="background:#ddd; color:#333; margin-top:5px">Reset Data</button>
 
-  <div id="debugLog" class="log-box"></div>
-
-  <div id="results">
-    <div class="section-title">🏆 Top Items</div>
-    <div id="topList"></div>
-    
-    <div class="section-title">📅 Biggest Orders</div>
-    <div id="bigOrderList"></div>
+  <div id="results" style="display:none">
+    <h3 style="font-size:14px; border-bottom:2px solid #ff3269; margin-top:20px;">🏆 Top Products</h3>
+    <div id="topList" class="list"></div>
   </div>
 
   <script>
-    // --- UTILS ---
-    function log(msg) {
-        const box = document.getElementById('debugLog');
-        box.style.display = 'block';
-        box.innerHTML += `> ${msg}<br>`;
-        box.scrollTop = box.scrollHeight;
-    }
-
-    // --- MAIN LOGIC ---
+    // --- JAVASCRIPT LOGIC ---
     document.addEventListener('DOMContentLoaded', () => {
       loadData();
       
       document.getElementById('scanBtn').addEventListener('click', () => {
-        log("Starting scan...");
         const btn = document.getElementById('scanBtn');
-        
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
           if (!tabs[0].url.includes("zepto")) {
-            alert("Open Zepto Orders page first!");
+            alert("Please open the Zepto Orders page first.");
             return;
           }
-          
-          btn.disabled = true;
           btn.innerText = "Scanning...";
+          btn.disabled = true;
 
           chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
-            function: scrapeZeptov10
+            function: scrapePage
           }, (results) => {
-            btn.disabled = false;
             btn.innerText = "🔄 Scan Visible Orders";
-
-            if (chrome.runtime.lastError) {
-                log("Error: " + chrome.runtime.lastError.message);
-                return;
-            }
-
+            btn.disabled = false;
             if (results && results[0] && results[0].result) {
-              const data = results[0].result;
-              log(`Scrape finished. Found ${data.length} orders.`);
-              if (data.length === 0) {
-                alert("Found 0 orders. Please SCROLL DOWN the page to load history!");
-              } else {
-                saveData(data);
-              }
+              saveData(results[0].result);
             }
           });
         });
       });
 
       document.getElementById('clearBtn').addEventListener('click', () => {
-        if(confirm("Clear history?")) chrome.storage.local.clear(loadData);
+        chrome.storage.local.clear(loadData);
       });
     });
 
-    function saveData(newItems) {
+    function saveData(newOrders) {
       chrome.storage.local.get(['expenses'], (result) => {
         const existing = result.expenses || [];
         let added = 0;
-        newItems.forEach(item => {
-          // Check duplicate (Date + Price signature)
+        newOrders.forEach(item => {
+          // Check duplicate by Price + Date
           if (!existing.some(e => e.date === item.date && e.price === item.price)) {
             existing.push(item);
             added++;
           }
         });
-        log(`Saved ${added} new orders.`);
-        chrome.storage.local.set({ expenses: existing }, loadData);
+        chrome.storage.local.set({ expenses: existing }, () => {
+          if(added === 0) alert("No new orders found. Did you scroll down?");
+          loadData();
+        });
       });
     }
 
@@ -120,82 +88,85 @@
       chrome.storage.local.get(['expenses'], (result) => {
         const expenses = result.expenses || [];
         if (expenses.length > 0) document.getElementById('results').style.display = 'block';
-
-        // 1. Total
+        
+        // Total
         const total = expenses.reduce((sum, i) => sum + i.price, 0);
         document.getElementById('totalAmount').innerText = '₹' + total.toLocaleString('en-IN');
         document.getElementById('orderCount').innerText = expenses.length + ' Orders';
 
-        // 2. Top Products
+        // Top Products
         const counts = {};
-        expenses.forEach(o => o.products.forEach(p => counts[p] = (counts[p]||0)+1));
-        const sortedProd = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0,5);
+        expenses.forEach(ord => {
+          ord.products.forEach(p => { counts[p] = (counts[p] || 0) + 1; });
+        });
         
-        document.getElementById('topList').innerHTML = sortedProd.map(p => `
-            <div class="prod-row"><span class="badge">${counts[p]}x</span> ${p}</div>
-        `).join('') || "<div style='color:#999;font-size:11px'>No product names found</div>";
-
-        // 3. Biggest Orders
-        const sortedPrice = [...expenses].sort((a,b) => b.price - a.price).slice(0,3);
-        document.getElementById('bigOrderList').innerHTML = sortedPrice.map(o => `
-            <div class="prod-row" style="justify-content:space-between">
-                <span>${o.date.split(',')[0].replace('Placed at ','')}</span>
-                <span style="font-weight:bold">₹${o.price}</span>
-            </div>
+        const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0,5);
+        document.getElementById('topList').innerHTML = sorted.map(name => `
+          <div class="prod-row">
+            <span class="count-badge">${counts[name]}x</span>
+            <span>${name}</span>
+          </div>
         `).join('');
       });
     }
 
-    // --- THE SCRAPER (Runs inside Zepto) ---
-    function scrapeZeptov10() {
+    // --- THE SCRAPER (Runs on Zepto Page) ---
+    function scrapePage() {
       const orders = [];
-      
-      // 1. Find all "Placed at" timestamps. These are our anchors.
-      // XPath is more robust for finding text.
-      const xpath = "//*[contains(text(), 'Placed at')]";
-      const snapshot = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+      // 1. Find all "Placed at" elements (Unique to history items)
+      // We look for any text containing "Placed at"
+      const allDivs = document.querySelectorAll('div, span, p');
+      const dateElements = Array.from(allDivs).filter(el => 
+        el.innerText && el.innerText.includes('Placed at') && el.children.length === 0
+      );
 
-      for (let i = 0; i < snapshot.snapshotLength; i++) {
-        const dateEl = snapshot.snapshotItem(i);
-        
-        // 2. Look UPWARDS to find the container that holds the price.
-        // We go up max 5 levels.
+      dateElements.forEach(dateEl => {
+        // 2. Find the Card Container
+        // Climb up until we find a container with a Price
         let card = dateEl.parentElement;
-        let foundPrice = null;
-        let foundProducts = [];
-
-        for (let k = 0; k < 5; k++) {
-          if (!card) break;
-          const text = card.innerText || "";
-          
-          // Check for Price (₹123)
-          const priceMatch = text.match(/[₹|Rs]\s?([0-9,]+)/);
-          if (priceMatch && !foundPrice) {
-             // We found the layer with the price!
-             foundPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
-             
-             // Now scan this same card for images
-             const imgs = card.querySelectorAll('img');
-             imgs.forEach(img => {
-                const alt = (img.alt || "").toLowerCase();
-                const src = (img.src || "").toLowerCase();
-                // Blocklist
-                if (alt.includes('arrow') || alt.includes('icon') || alt.includes('status') || src.includes('svg')) return;
-                if (img.alt.length > 2) foundProducts.push(img.alt);
-             });
-             break; // Stop climbing, we found our data
+        let validCard = null;
+        for(let i=0; i<6; i++) { // Max 6 levels up
+          if(card) {
+             // Check if this container has a price
+             if(card.innerText.match(/[₹|Rs]\s?[0-9,]+/)) {
+               validCard = card;
+               // Don't break immediately, sometimes the row has price, but we want the full card
+             }
+             card = card.parentElement;
           }
-          card = card.parentElement;
         }
+        // Use the last valid card found (highest parent with price)
+        if(!validCard) return;
 
-        if (foundPrice) {
-          orders.push({
-            date: dateEl.innerText.trim(), // "Placed at 5th..."
-            price: foundPrice,
-            products: [...new Set(foundProducts)] // Remove duplicate names
-          });
-        }
-      }
+        const text = validCard.innerText;
+
+        // Price
+        const priceMatch = text.match(/[₹|Rs]\s?([0-9,]+)/);
+        if(!priceMatch) return;
+        const price = parseFloat(priceMatch[1].replace(/,/g, ''));
+
+        // Date
+        const dateMatch = text.match(/Placed at\s(.+)/);
+        const date = dateMatch ? dateMatch[1] : "Unknown";
+
+        // Products (STRICT FILTER)
+        const products = [];
+        const images = validCard.querySelectorAll('img');
+        images.forEach(img => {
+          const alt = (img.alt || "").toLowerCase();
+          const src = (img.src || "").toLowerCase();
+          
+          // BLOCK THESE ICONS
+          if(alt.includes('arrow') || alt.includes('icon') || alt.includes('status') || 
+             alt.includes('delivered') || src.includes('.svg')) return;
+          
+          if(img.alt && img.alt.length > 2) {
+             products.push(img.alt);
+          }
+        });
+
+        orders.push({ date, price, products });
+      });
       return orders;
     }
   </script>
