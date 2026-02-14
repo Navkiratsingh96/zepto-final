@@ -3,172 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    /* CSS STYLES */
-    body { width: 320px; font-family: sans-serif; padding: 15px; background: #f4f4f4; color: #333; }
-    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 10px; }
-    h2 { margin: 0 0 5px 0; color: #3d0752; font-size: 18px; }
-    .big-num { font-size: 32px; font-weight: bold; color: #ff3269; margin: 10px 0; }
+    body { width: 320px; font-family: sans-serif; padding: 15px; background: #f8f9fa; color: #333; }
+    .card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; }
+    h2 { margin: 0; color: #3d0752; font-size: 16px; text-transform: uppercase; }
+    .big-num { font-size: 32px; font-weight: 800; color: #ff3269; margin: 10px 0; }
+    
     button { width: 100%; padding: 12px; background: #3d0752; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
     button:hover { background: #5a1075; }
     button:disabled { background: #ccc; }
-    .list { text-align: left; margin-top: 15px; }
-    .item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 13px; }
-    .prod-row { display: flex; align-items: center; background: white; padding: 8px; margin-bottom: 6px; border-radius: 4px; }
-    .count-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; margin-right: 8px; }
+
+    .section-title { font-size: 12px; font-weight: bold; color: #666; margin: 15px 0 5px 0; border-bottom: 1px solid #ddd; }
+    
+    .row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #eee; }
+    .badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; margin-right: 5px; }
+    
+    #status { font-size: 11px; color: #666; text-align: center; margin-top: 10px; }
+    #results { display: none; }
   </style>
 </head>
 <body>
-
   <div class="card">
-    <h2>🟣 Zepto Analyzer</h2>
+    <h2>🟣 Lifetime Spend</h2>
     <div class="big-num" id="totalAmount">₹0</div>
-    <div id="orderCount" style="color:#666; font-size:12px">0 Orders found</div>
+    <div id="orderCount" style="font-size:12px; color:#888">0 Orders</div>
   </div>
 
   <button id="scanBtn">🔄 Scan Visible Orders</button>
-  <button id="clearBtn" style="background:#ddd; color:#333; margin-top:5px">Reset Data</button>
+  <button id="clearBtn" style="background:#ddd; color:#333; margin-top:5px">Reset</button>
+  <div id="status"></div>
 
-  <div id="results" style="display:none">
-    <h3 style="font-size:14px; border-bottom:2px solid #ff3269; margin-top:20px;">🏆 Top Products</h3>
-    <div id="topList" class="list"></div>
+  <div id="results">
+    <div class="section-title">🏆 Top Products</div>
+    <div id="topList"></div>
+    
+    <div class="section-title">📅 Biggest Orders</div>
+    <div id="bigList"></div>
   </div>
 
-  <script>
-    // --- JAVASCRIPT LOGIC ---
-    document.addEventListener('DOMContentLoaded', () => {
-      loadData();
-      
-      document.getElementById('scanBtn').addEventListener('click', () => {
-        const btn = document.getElementById('scanBtn');
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-          if (!tabs[0].url.includes("zepto")) {
-            alert("Please open the Zepto Orders page first.");
-            return;
-          }
-          btn.innerText = "Scanning...";
-          btn.disabled = true;
-
-          chrome.scripting.executeScript({
-            target: { tabId: tabs[0].id },
-            function: scrapePage
-          }, (results) => {
-            btn.innerText = "🔄 Scan Visible Orders";
-            btn.disabled = false;
-            if (results && results[0] && results[0].result) {
-              saveData(results[0].result);
-            }
-          });
-        });
-      });
-
-      document.getElementById('clearBtn').addEventListener('click', () => {
-        chrome.storage.local.clear(loadData);
-      });
-    });
-
-    function saveData(newOrders) {
-      chrome.storage.local.get(['expenses'], (result) => {
-        const existing = result.expenses || [];
-        let added = 0;
-        newOrders.forEach(item => {
-          // Check duplicate by Price + Date
-          if (!existing.some(e => e.date === item.date && e.price === item.price)) {
-            existing.push(item);
-            added++;
-          }
-        });
-        chrome.storage.local.set({ expenses: existing }, () => {
-          if(added === 0) alert("No new orders found. Did you scroll down?");
-          loadData();
-        });
-      });
-    }
-
-    function loadData() {
-      chrome.storage.local.get(['expenses'], (result) => {
-        const expenses = result.expenses || [];
-        if (expenses.length > 0) document.getElementById('results').style.display = 'block';
-        
-        // Total
-        const total = expenses.reduce((sum, i) => sum + i.price, 0);
-        document.getElementById('totalAmount').innerText = '₹' + total.toLocaleString('en-IN');
-        document.getElementById('orderCount').innerText = expenses.length + ' Orders';
-
-        // Top Products
-        const counts = {};
-        expenses.forEach(ord => {
-          ord.products.forEach(p => { counts[p] = (counts[p] || 0) + 1; });
-        });
-        
-        const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0,5);
-        document.getElementById('topList').innerHTML = sorted.map(name => `
-          <div class="prod-row">
-            <span class="count-badge">${counts[name]}x</span>
-            <span>${name}</span>
-          </div>
-        `).join('');
-      });
-    }
-
-    // --- THE SCRAPER (Runs on Zepto Page) ---
-    function scrapePage() {
-      const orders = [];
-      // 1. Find all "Placed at" elements (Unique to history items)
-      // We look for any text containing "Placed at"
-      const allDivs = document.querySelectorAll('div, span, p');
-      const dateElements = Array.from(allDivs).filter(el => 
-        el.innerText && el.innerText.includes('Placed at') && el.children.length === 0
-      );
-
-      dateElements.forEach(dateEl => {
-        // 2. Find the Card Container
-        // Climb up until we find a container with a Price
-        let card = dateEl.parentElement;
-        let validCard = null;
-        for(let i=0; i<6; i++) { // Max 6 levels up
-          if(card) {
-             // Check if this container has a price
-             if(card.innerText.match(/[₹|Rs]\s?[0-9,]+/)) {
-               validCard = card;
-               // Don't break immediately, sometimes the row has price, but we want the full card
-             }
-             card = card.parentElement;
-          }
-        }
-        // Use the last valid card found (highest parent with price)
-        if(!validCard) return;
-
-        const text = validCard.innerText;
-
-        // Price
-        const priceMatch = text.match(/[₹|Rs]\s?([0-9,]+)/);
-        if(!priceMatch) return;
-        const price = parseFloat(priceMatch[1].replace(/,/g, ''));
-
-        // Date
-        const dateMatch = text.match(/Placed at\s(.+)/);
-        const date = dateMatch ? dateMatch[1] : "Unknown";
-
-        // Products (STRICT FILTER)
-        const products = [];
-        const images = validCard.querySelectorAll('img');
-        images.forEach(img => {
-          const alt = (img.alt || "").toLowerCase();
-          const src = (img.src || "").toLowerCase();
-          
-          // BLOCK THESE ICONS
-          if(alt.includes('arrow') || alt.includes('icon') || alt.includes('status') || 
-             alt.includes('delivered') || src.includes('.svg')) return;
-          
-          if(img.alt && img.alt.length > 2) {
-             products.push(img.alt);
-          }
-        });
-
-        orders.push({ date, price, products });
-      });
-      return orders;
-    }
-  </script>
+  <script src="popup.js"></script>
 </body>
 </html>
