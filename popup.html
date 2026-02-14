@@ -3,91 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    /* CSS STYLES */
-    body { width: 340px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 15px; background: #f8f9fa; color: #333; margin: 0; }
+    body { width: 350px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 15px; background: #f8f9fa; color: #333; }
     
-    /* Card Styles */
     .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; margin-bottom: 12px; }
-    .card h2 { margin: 0 0 5px 0; color: #3d0752; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
-    .big-num { font-size: 36px; font-weight: 800; color: #ff3269; margin: 8px 0; letter-spacing: -1px; }
-    .sub-text { color: #888; font-size: 12px; font-weight: 500; }
-
-    /* Button Styles */
-    button { width: 100%; padding: 12px; background: #3d0752; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 5px; transition: background 0.2s; font-size: 14px; }
+    h2 { margin: 0 0 5px 0; color: #3d0752; font-size: 18px; font-weight: 800; }
+    .big-num { font-size: 36px; font-weight: 800; color: #ff3269; margin: 8px 0; }
+    
+    button { width: 100%; padding: 12px; background: #3d0752; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 5px; font-size: 14px; }
     button:hover { background: #5a1075; }
     button:disabled { background: #cbd5e0; cursor: not-allowed; }
-    .secondary-btn { background: #e2e8f0; color: #475569; margin-top: 8px; }
-    .secondary-btn:hover { background: #cbd5e0; }
-
-    /* List Sections */
-    .section-title { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 2px solid #ff3269; display: inline-block; }
     
-    /* Product Row */
-    .prod-row { display: flex; align-items: center; background: white; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #e2e8f0; }
-    .count-badge { background: #f1f5f9; color: #333; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 12px; margin-right: 10px; min-width: 24px; text-align: center; }
-    .prod-name { font-size: 13px; font-weight: 600; color: #1e293b; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .log-box { background: #222; color: #0f0; font-family: monospace; font-size: 10px; padding: 10px; border-radius: 6px; height: 80px; overflow-y: auto; margin-top: 10px; text-align: left; display: none; }
 
-    /* Expensive Order Row */
-    .exp-row { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; border-left: 4px solid #ff3269; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .exp-info { display: flex; flex-direction: column; text-align: left; }
-    .exp-date { font-size: 11px; color: #64748b; font-weight: 500; }
-    .exp-items { font-size: 11px; color: #333; font-weight: 600; margin-top: 2px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .exp-price { font-size: 14px; font-weight: 800; color: #3d0752; }
+    .section-title { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 2px solid #ff3269; display: inline-block; }
 
-    #results { display: none; padding-bottom: 20px; }
+    .prod-row { display: flex; align-items: center; background: white; padding: 8px; margin-bottom: 6px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; }
+    .badge { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 8px; font-size: 11px; }
+
+    #results { display: none; }
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h2>🟣 Zepto Lifetime Stats</h2>
+    <h2>🟣 Zepto Tracker v10</h2>
     <div class="big-num" id="totalAmount">₹0</div>
-    <div class="sub-text" id="orderCount">0 Orders Tracked</div>
+    <div id="orderCount" style="color:#666; font-size:12px">0 Orders</div>
   </div>
 
   <button id="scanBtn">🔄 Scan Visible Orders</button>
-  <button id="clearBtn" class="secondary-btn">Reset Data</button>
+  <button id="clearBtn" style="background:#e2e8f0; color:#333; margin-top:8px">Reset Data</button>
+
+  <div id="debugLog" class="log-box"></div>
 
   <div id="results">
-    
-    <div class="section-title">💰 Top 5 Biggest Orders</div>
-    <div id="expensiveList"></div>
-
-    <div class="section-title">🏆 Most Frequent Items</div>
+    <div class="section-title">🏆 Top Items</div>
     <div id="topList"></div>
-
-    <p style="font-size:10px; color:#999; text-align:center; margin-top:20px;">
-      *Individual item prices are not visible in list view.
-    </p>
+    
+    <div class="section-title">📅 Biggest Orders</div>
+    <div id="bigOrderList"></div>
   </div>
 
   <script>
-    // --- JAVASCRIPT LOGIC ---
+    // --- UTILS ---
+    function log(msg) {
+        const box = document.getElementById('debugLog');
+        box.style.display = 'block';
+        box.innerHTML += `> ${msg}<br>`;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // --- MAIN LOGIC ---
     document.addEventListener('DOMContentLoaded', () => {
       loadData();
       
       document.getElementById('scanBtn').addEventListener('click', () => {
+        log("Starting scan...");
         const btn = document.getElementById('scanBtn');
+        
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
           if (!tabs[0].url.includes("zepto")) {
-            alert("⚠️ Please open the Zepto Orders page first.");
+            alert("Open Zepto Orders page first!");
             return;
           }
-          btn.innerText = "⏳ Scanning...";
+          
           btn.disabled = true;
+          btn.innerText = "Scanning...";
 
           chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
-            function: scrapePage
+            function: scrapeZeptov10
           }, (results) => {
-            btn.innerText = "🔄 Scan Visible Orders";
             btn.disabled = false;
+            btn.innerText = "🔄 Scan Visible Orders";
+
+            if (chrome.runtime.lastError) {
+                log("Error: " + chrome.runtime.lastError.message);
+                return;
+            }
+
             if (results && results[0] && results[0].result) {
-              const count = results[0].result.length;
-              if (count === 0) {
-                alert("No orders found.\n\nTip: Please scroll down the page to load more history, then click Scan again.");
+              const data = results[0].result;
+              log(`Scrape finished. Found ${data.length} orders.`);
+              if (data.length === 0) {
+                alert("Found 0 orders. Please SCROLL DOWN the page to load history!");
               } else {
-                saveData(results[0].result);
+                saveData(data);
               }
             }
           });
@@ -95,160 +96,106 @@
       });
 
       document.getElementById('clearBtn').addEventListener('click', () => {
-        if(confirm("Delete all history?")) {
-            chrome.storage.local.clear(loadData);
-        }
+        if(confirm("Clear history?")) chrome.storage.local.clear(loadData);
       });
     });
 
-    function saveData(newOrders) {
+    function saveData(newItems) {
       chrome.storage.local.get(['expenses'], (result) => {
         const existing = result.expenses || [];
         let added = 0;
-        newOrders.forEach(item => {
-          // Prevent duplicates (Unique key: Date + Price)
+        newItems.forEach(item => {
+          // Check duplicate (Date + Price signature)
           if (!existing.some(e => e.date === item.date && e.price === item.price)) {
             existing.push(item);
             added++;
           }
         });
-        chrome.storage.local.set({ expenses: existing }, () => {
-          loadData();
-        });
+        log(`Saved ${added} new orders.`);
+        chrome.storage.local.set({ expenses: existing }, loadData);
       });
     }
 
     function loadData() {
       chrome.storage.local.get(['expenses'], (result) => {
         const expenses = result.expenses || [];
-        
-        if (expenses.length > 0) {
-            document.getElementById('results').style.display = 'block';
-        } else {
-            document.getElementById('results').style.display = 'none';
-        }
-        
-        // 1. Update Totals
+        if (expenses.length > 0) document.getElementById('results').style.display = 'block';
+
+        // 1. Total
         const total = expenses.reduce((sum, i) => sum + i.price, 0);
         document.getElementById('totalAmount').innerText = '₹' + total.toLocaleString('en-IN');
         document.getElementById('orderCount').innerText = expenses.length + ' Orders';
 
-        // 2. Top 5 Expensive Orders (NEW FEATURE)
-        const sortedByPrice = [...expenses].sort((a,b) => b.price - a.price).slice(0, 5);
-        document.getElementById('expensiveList').innerHTML = sortedByPrice.map(order => {
-            // Format date nicely
-            const dateStr = order.date.replace("Placed at ", "").split(",")[0];
-            // Get product summary (e.g. "Milk, Bread...")
-            const prodSummary = order.products.slice(0, 3).join(", ") + (order.products.length > 3 ? "..." : "");
-            
-            return `
-            <div class="exp-row">
-                <div class="exp-info">
-                    <span class="exp-date">${dateStr}</span>
-                    <span class="exp-items">${prodSummary || "Grocery Items"}</span>
-                </div>
-                <div class="exp-price">₹${order.price.toLocaleString('en-IN')}</div>
-            </div>`;
-        }).join('');
-
-        // 3. Most Frequent Products
+        // 2. Top Products
         const counts = {};
-        expenses.forEach(ord => {
-          ord.products.forEach(p => { 
-              // Cleanup name
-              let name = p.trim();
-              counts[name] = (counts[name] || 0) + 1; 
-          });
-        });
+        expenses.forEach(o => o.products.forEach(p => counts[p] = (counts[p]||0)+1));
+        const sortedProd = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0,5);
         
-        const sortedFreq = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 5);
-        
-        if (sortedFreq.length === 0) {
-             document.getElementById('topList').innerHTML = "<div style='text-align:center; color:#999; font-size:12px; padding:10px;'>No product names found (Icons hidden)</div>";
-        } else {
-            document.getElementById('topList').innerHTML = sortedFreq.map(name => `
-            <div class="prod-row">
-                <span class="count-badge">${counts[name]}x</span>
-                <span class="prod-name">${name}</span>
+        document.getElementById('topList').innerHTML = sortedProd.map(p => `
+            <div class="prod-row"><span class="badge">${counts[p]}x</span> ${p}</div>
+        `).join('') || "<div style='color:#999;font-size:11px'>No product names found</div>";
+
+        // 3. Biggest Orders
+        const sortedPrice = [...expenses].sort((a,b) => b.price - a.price).slice(0,3);
+        document.getElementById('bigOrderList').innerHTML = sortedPrice.map(o => `
+            <div class="prod-row" style="justify-content:space-between">
+                <span>${o.date.split(',')[0].replace('Placed at ','')}</span>
+                <span style="font-weight:bold">₹${o.price}</span>
             </div>
-            `).join('');
-        }
+        `).join('');
       });
     }
 
-    // --- THE SCRAPER (Runs on Zepto Page) ---
-    function scrapePage() {
+    // --- THE SCRAPER (Runs inside Zepto) ---
+    function scrapeZeptov10() {
       const orders = [];
       
-      // 1. Find all "Placed at" timestamps (This is the anchor for every order card)
-      // Use a TreeWalker to find text nodes containing "Placed at"
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-      const dateNodes = [];
-      let node;
-      while(node = walker.nextNode()) {
-          if(node.textContent.includes('Placed at')) {
-              dateNodes.push(node.parentElement);
-          }
-      }
+      // 1. Find all "Placed at" timestamps. These are our anchors.
+      // XPath is more robust for finding text.
+      const xpath = "//*[contains(text(), 'Placed at')]";
+      const snapshot = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 
-      dateNodes.forEach(dateEl => {
-        // 2. Intelligent Card Isolation
-        // Walk up parents until we find the container that has the Price
-        let card = dateEl.parentElement;
-        let validCard = null;
+      for (let i = 0; i < snapshot.snapshotLength; i++) {
+        const dateEl = snapshot.snapshotItem(i);
         
-        // Climb max 6 levels
-        for(let i=0; i<6; i++) {
-          if(card) {
-             const text = card.innerText || "";
-             // Check if this container has a price like ₹174
-             if(text.match(/[₹|Rs]\s?[0-9,]+/)) {
-               // We found a container with price. 
-               // BUT, we must ensure it's not the "Page Wrapper" containing ALL orders.
-               // We check if it has multiple "Placed at" strings. If so, it's too big.
-               const dateCount = (text.match(/Placed at/g) || []).length;
-               if (dateCount === 1) {
-                   validCard = card;
-               }
-             }
-             card = card.parentElement;
+        // 2. Look UPWARDS to find the container that holds the price.
+        // We go up max 5 levels.
+        let card = dateEl.parentElement;
+        let foundPrice = null;
+        let foundProducts = [];
+
+        for (let k = 0; k < 5; k++) {
+          if (!card) break;
+          const text = card.innerText || "";
+          
+          // Check for Price (₹123)
+          const priceMatch = text.match(/[₹|Rs]\s?([0-9,]+)/);
+          if (priceMatch && !foundPrice) {
+             // We found the layer with the price!
+             foundPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
+             
+             // Now scan this same card for images
+             const imgs = card.querySelectorAll('img');
+             imgs.forEach(img => {
+                const alt = (img.alt || "").toLowerCase();
+                const src = (img.src || "").toLowerCase();
+                // Blocklist
+                if (alt.includes('arrow') || alt.includes('icon') || alt.includes('status') || src.includes('svg')) return;
+                if (img.alt.length > 2) foundProducts.push(img.alt);
+             });
+             break; // Stop climbing, we found our data
           }
+          card = card.parentElement;
         }
 
-        if(!validCard) return;
-
-        const text = validCard.innerText;
-
-        // A. Extract Price
-        const priceMatch = text.match(/[₹|Rs]\s?([0-9,]+)/);
-        if(!priceMatch) return;
-        const price = parseFloat(priceMatch[1].replace(/,/g, ''));
-
-        // B. Extract Date
-        const dateMatch = text.match(/Placed at\s(.+)/);
-        const date = dateMatch ? dateMatch[0] : "Unknown";
-
-        // C. Extract Products (Strict Filter)
-        const products = [];
-        const images = validCard.querySelectorAll('img');
-        images.forEach(img => {
-          const alt = (img.alt || "").toLowerCase();
-          const src = (img.src || "").toLowerCase();
-          
-          // BLOCKLIST: Ignore UI Icons
-          if(alt.includes('arrow') || alt.includes('icon') || alt.includes('status') || 
-             alt.includes('delivered') || src.includes('.svg')) return;
-          
-          if(img.alt && img.alt.length > 2) {
-             // Capitalize first letter
-             let cleanName = img.alt.charAt(0).toUpperCase() + img.alt.slice(1);
-             products.push(cleanName);
-          }
-        });
-
-        orders.push({ date, price, products });
-      });
-      
+        if (foundPrice) {
+          orders.push({
+            date: dateEl.innerText.trim(), // "Placed at 5th..."
+            price: foundPrice,
+            products: [...new Set(foundProducts)] // Remove duplicate names
+          });
+        }
+      }
       return orders;
     }
   </script>
