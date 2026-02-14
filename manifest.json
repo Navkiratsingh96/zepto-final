@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Zepto Spending Master",
-  "version": "6.0",
-  "description": "Track spending, analyze monthly trends, and find top products on Zepto.",
+  "version": "8.0",
+  "description": "Final fixed version.",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["*://*.zepto.com/*", "*://*.zeptonow.com/*"],
   "action": {
